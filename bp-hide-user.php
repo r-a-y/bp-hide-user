@@ -226,7 +226,7 @@ class BP_Hide_User {
 		}
 
 		// return false if you don't want to block hidden profiles from public view
-		if ( bp_current_user_can( 'bp_moderate' ) || false === (bool) apply_filters( 'bp_hu_block_hidden_user_profile', true ) ) {
+		if ( ( bp_current_user_can( 'bp_moderate' ) || bp_is_my_profile() ) || false === (bool) apply_filters( 'bp_hu_block_hidden_user_profile', true ) ) {
 			return;
 		}
 
