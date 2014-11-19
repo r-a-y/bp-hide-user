@@ -196,9 +196,7 @@ class BP_Hide_User {
 		}
 
 		// update log
-		if ( ! empty( $log ) ) {
-			bp_update_option( 'bp_hide_user_log', $log );
-		}
+		bp_update_option( 'bp_hide_user_log', $log );
 
 		// hook for plugins
 		do_action( "bp_hu_{$action}_user", $user_id );
