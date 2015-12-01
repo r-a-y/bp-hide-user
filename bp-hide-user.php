@@ -14,8 +14,11 @@ add_action( 'bp_loaded', array( 'BP_Hide_User', 'init' ) );
 /**
  * An efficient way to hide selected users from the BP members directory.
  *
- * This plugin doesn't manipulate any DB queries.  Only removes the
- * 'last_activity' entry from the BP activity table.
+ * This plugin doesn't manipulate any DB queries on the Members directory.
+ * Only removes the 'last_activity' entry from the BP activity table.
+ *
+ * However, hiding these users from the activity stream does require
+ * manipulating the activity stream DB query.
  *
  * @todo Hide users from alphabetical filter in members directory?
  */
@@ -35,6 +38,10 @@ class BP_Hide_User {
 		add_action( 'bp_member_header_actions', array( $this, 'add_button' ), 99 );
 		add_action( 'bp_actions',               array( $this, 'action_listener' ) );
 		add_action( 'bp_screens',               array( $this, 'block_hidden_user_profile' ) );
+
+		// activity stream
+		add_filter( 'bp_after_has_activities_parse_args',   array( $this, 'remove_hidden_user_activity' ), 20 );
+		add_filter( 'bp_activity_set_hide_user_scope_args', array( $this, 'filter_hide_user_activity_scope' ), 10, 2 );
 
 		// misc
 		add_action( 'bp_before_directory_members_tabs', array( $this, 'add_template_notices_to_members_directory' ) );
@@ -69,6 +76,54 @@ class BP_Hide_User {
 
 		// hook for plugins to do other stuff!
 		do_action( 'bp_hide_user_loaded' );
+	}
+
+	/**
+	 * Removes hidden users from the activity stream.
+	 *
+	 * This is done by adding our special 'hide_user' activity scope to activity
+	 * template loops.
+	 *
+	 * @param  array $retval Current activity arguments.
+	 * @return array
+	 */
+	public function remove_hidden_user_activity( $retval = array() ) {
+		$log = bp_get_option( 'bp_hide_user_log' );
+		if ( empty( $log ) ) {
+			return $retval;
+		}
+
+		$retval['scope'] = (array) explode( ',', $retval['scope'] );
+		$retval['scope'][] = 'hide_user';
+
+		return $retval;
+	}
+
+	/**
+	 * Set up activity arguments for use with the 'hide_user' scope.
+	 *
+	 * @param array $retval Empty array by default.
+	 * @param array $filter Current activity arguments.
+	 * @return array $retval
+	 */
+	public function filter_hide_user_activity_scope( $retval = array(), $filter = array() ) {
+		$omit_users = bp_get_option( 'bp_hide_user_log' );
+		$omit_users = array_keys( $omit_users );
+
+		$retval = array(
+			array(
+				'column' => 'user_id',
+				'compare' => 'NOT IN',
+				'value'  => $omit_users
+			),
+
+			// Overrides.
+			'override' => array(
+				'filter' => array( 'user_id' => 0 ),
+			),
+		);
+
+		return $retval;
 	}
 
 	/**
