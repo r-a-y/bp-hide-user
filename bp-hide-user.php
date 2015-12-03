@@ -79,10 +79,9 @@ class BP_Hide_User {
 	}
 
 	/**
-	 * Removes hidden users from the activity stream.
+	 * Removes activity by hidden users from the Activity Directory page.
 	 *
-	 * This is done by adding our special 'hide_user' activity scope to activity
-	 * template loops.
+	 * This is done by adding our special 'hide_user' activity scope.
 	 *
 	 * @param  array $retval Current activity arguments.
 	 * @return array
@@ -90,6 +89,10 @@ class BP_Hide_User {
 	public function remove_hidden_user_activity( $retval = array() ) {
 		$log = bp_get_option( 'bp_hide_user_log' );
 		if ( empty( $log ) ) {
+			return $retval;
+		}
+
+		if ( ! bp_is_activity_directory() ) {
 			return $retval;
 		}
 
