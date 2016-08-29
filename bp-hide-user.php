@@ -79,9 +79,10 @@ class BP_Hide_User {
 	}
 
 	/**
-	 * Removes activity by hidden users from the Activity Directory page.
+	 * Removes hidden users from the activity stream.
 	 *
-	 * This is done by adding our special 'hide_user' activity scope.
+	 * This is done by filtering the activity SQL WHERE conditions only on the
+	 * activity directory page.
 	 *
 	 * @param  array $retval Current activity arguments.
 	 * @return array
@@ -96,35 +97,23 @@ class BP_Hide_User {
 			return $retval;
 		}
 
-		$retval['scope'] = (array) explode( ',', $retval['scope'] );
-		$retval['scope'][] = 'hide_user';
+		add_filter( 'bp_activity_get_where_conditions', array( $this, 'filter_activity_where_conditions' ) );
 
 		return $retval;
 	}
 
 	/**
-	 * Set up activity arguments for use with the 'hide_user' scope.
+	 * Filters the activity WHERE SQL conditions to omit hidden users.
 	 *
-	 * @param array $retval Empty array by default.
-	 * @param array $filter Current activity arguments.
+	 * @param array $retval Current activity WHERE conditions.
 	 * @return array $retval
 	 */
-	public function filter_hide_user_activity_scope( $retval = array(), $filter = array() ) {
+	public function filter_activity_where_conditions( $retval = array() ) {
 		$omit_users = bp_get_option( 'bp_hide_user_log' );
 		$omit_users = array_keys( $omit_users );
 
-		$retval = array(
-			array(
-				'column' => 'user_id',
-				'compare' => 'NOT IN',
-				'value'  => $omit_users
-			),
-
-			// Overrides.
-			'override' => array(
-				'filter' => array( 'user_id' => 0 ),
-			),
-		);
+		$not_in = implode( ',', wp_parse_id_list( $omit_users ) );
+		$retval['hide_users'] = "a.id NOT IN ({$not_in})";
 
 		return $retval;
 	}
